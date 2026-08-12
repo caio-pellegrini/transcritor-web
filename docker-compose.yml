@@ -1,0 +1,80 @@
+services:
+  app:
+    image: transcritor-web-app:latest
+    build:
+      context: .
+      target: prod
+    env_file:
+      - .env
+    restart: unless-stopped
+    stop_grace_period: 2m
+    volumes:
+      - app_storage:/var/www/html/storage
+      - app_public:/var/www/html/public
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    image: nginx:1.29-alpine
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ports:
+      - "127.0.0.1:${APP_PORT:-8000}:80"
+    volumes:
+      - app_public:/var/www/html/public:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  worker:
+    image: transcritor-web-app:latest
+    command: ["supervisord", "-n", "-c", "/etc/supervisor/supervisord.conf"]
+    env_file:
+      - .env
+    restart: unless-stopped
+    stop_grace_period: 7h5m
+    volumes:
+      - app_storage:/var/www/html/storage
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "supervisorctl status queue-worker | grep -q RUNNING && supervisorctl status scheduler | grep -q RUNNING",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  app_public:
+  app_storage:
