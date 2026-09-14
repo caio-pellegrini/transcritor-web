@@ -65,7 +65,6 @@ test('local preview reads only browser metadata and keeps upload separate from a
         ->toContain('URL.revokeObjectURL(objectUrl)')
         ->toContain('Math.max(preview.cost_usd * 0.05, 0.05)')
         ->toContain('preview.availability.requires_transcode !==')
-        ->toContain('preview.duration_seconds <= 1500 !== confirmed.duration_seconds <= 1500')
         ->not->toContain('FileReader');
 
     expect($page)

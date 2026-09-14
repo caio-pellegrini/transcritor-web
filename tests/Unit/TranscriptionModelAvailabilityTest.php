@@ -20,16 +20,14 @@ function availabilityTranscription(
     ]);
 }
 
-test('all gpt transcription models use the conservative 25 minute limit', function (string $model) {
+test('gpt transcribe remains available beyond 25 minutes', function () {
     $availability = app(TranscriptionModelAvailability::class)->forTranscription(
-        availabilityTranscription('openai', $model, 1500.1, 10 * 1024 * 1024),
+        availabilityTranscription('openai', 'gpt-transcribe', 1500.1, 10 * 1024 * 1024),
     );
 
-    expect($availability['available'])->toBeFalse()
-        ->and($availability['reason'])->toContain('25 minutos');
-})->with([
-    'GPT Transcribe' => 'gpt-transcribe',
-]);
+    expect($availability['available'])->toBeTrue()
+        ->and($availability['requires_transcode'])->toBeFalse();
+});
 
 test('whisper transcode remains available at or above the quality floor', function () {
     $availability = app(TranscriptionModelAvailability::class)->forTranscription(

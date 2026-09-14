@@ -70,11 +70,7 @@ export const calculateAvailability = (
     const modelDurationLimit = model.constraints?.max_duration_seconds;
 
     if (modelDurationLimit && durationSeconds > modelDurationLimit) {
-        return unavailable(
-            model.capabilities.diarization
-                ? 'Acima de 25 minutos, use a diarização da ElevenLabs.'
-                : 'Este modelo aceita áudios de no máximo 25 minutos.',
-        );
+        return unavailable('Este modelo não aceita a duração deste áudio.');
     }
 
     const providerDurationLimit = provider.constraints.max_duration_seconds;
@@ -127,10 +123,6 @@ export const confirmationReason = (
 
     if (preview.availability.requires_transcode !== confirmed.availability.requires_transcode) {
         return 'A validação do servidor alterou a necessidade de conversão do arquivo.';
-    }
-
-    if (preview.duration_seconds <= 1500 !== confirmed.duration_seconds <= 1500) {
-        return 'A duração confirmada cruzou o limite de 25 minutos.';
     }
 
     if (preview.diarization_valid !== confirmed.diarization_valid || !confirmed.diarization_valid) {

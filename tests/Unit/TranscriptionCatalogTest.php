@@ -13,7 +13,7 @@ test('transcription catalog contains the approved providers models capabilities 
         ])
         ->and($catalog['providers']['openai']['models']['gpt-transcribe']['pricing']['usd'])->toBe(0.0045)
         ->and($catalog['providers']['openai']['models']['gpt-transcribe']['capabilities']['diarization'])->toBeFalse()
-        ->and($catalog['providers']['openai']['models']['gpt-transcribe']['constraints']['max_duration_seconds'])->toBe(1500)
+        ->and($catalog['providers']['openai']['models']['gpt-transcribe']['constraints']['max_duration_seconds'])->toBeNull()
         ->and(array_keys($catalog['providers']['elevenlabs']['models']))->toBe(['scribe_v2'])
         ->and($catalog['providers']['elevenlabs']['models']['scribe_v2']['pricing'])->toMatchArray([
             'type' => 'per_hour',

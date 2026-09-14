@@ -57,7 +57,7 @@ test('start requires the dedicated api key header', function () {
     Queue::assertNothingPushed();
 });
 
-test('start rejects a model that is unavailable for the known media duration', function () {
+test('start accepts gpt transcribe beyond 25 minutes', function () {
     Queue::fake();
     $transcription = workflowTranscription([
         'duration_seconds' => 1800,
@@ -71,14 +71,11 @@ test('start rejects a model that is unavailable for the known media duration', f
         ->withHeader('X-Transcription-Api-Key', 'unused-key')
         ->from(route('transcriptions.show', $transcription))
         ->post(route('transcriptions.start', $transcription))
-        ->assertRedirect(route('transcriptions.show', $transcription))
-        ->assertSessionHasErrors([
-            'transcription' => 'Este modelo aceita áudios de no máximo 25 minutos.',
-        ]);
+        ->assertRedirect(route('transcriptions.show', $transcription));
 
     expect($transcription->refresh()->status)
-        ->toBe(Transcription::STATUS_AWAITING_CONFIRMATION);
-    Queue::assertNothingPushed();
+        ->toBe(Transcription::STATUS_QUEUED);
+    Queue::assertPushed(ProcessTranscriptionJob::class);
 });
 
 test('duplicate start requests dispatch exactly one job', function () {

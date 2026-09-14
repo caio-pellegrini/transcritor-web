@@ -59,11 +59,7 @@ class TranscriptionModelAvailability
         $modelDurationLimit = data_get($modelConfig, 'constraints.max_duration_seconds');
 
         if (is_numeric($modelDurationLimit) && $durationSeconds > (float) $modelDurationLimit) {
-            $reason = data_get($modelConfig, 'capabilities.diarization', false)
-                ? 'Acima de 25 minutos, use a diarização da ElevenLabs.'
-                : 'Este modelo aceita áudios de no máximo 25 minutos.';
-
-            return $this->unavailable($reason);
+            return $this->unavailable('Este modelo não aceita a duração deste áudio.');
         }
 
         $providerDurationLimit = data_get($providerConfig, 'constraints.max_duration_seconds');

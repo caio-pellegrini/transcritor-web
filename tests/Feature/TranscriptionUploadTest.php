@@ -293,7 +293,7 @@ test('recalculates provider and model without changing or uploading media', func
     Storage::disk('local')->assertExists('transcriptions/example/source.mp3');
 });
 
-test('rejects recalculation to a model that cannot handle the known duration', function () {
+test('allows recalculation to gpt transcribe beyond 25 minutes', function () {
     Storage::fake('local');
     Storage::disk('local')->put('transcriptions/long/source.mp3', 'fixture');
 
@@ -319,13 +319,10 @@ test('rejects recalculation to a model that cannot handle the known duration', f
             'model' => 'gpt-transcribe',
             'diarization' => false,
         ])
-        ->assertRedirect(route('transcriptions.show', $transcription))
-        ->assertSessionHasErrors([
-            'model' => 'Este modelo aceita áudios de no máximo 25 minutos.',
-        ]);
+        ->assertRedirect(route('transcriptions.show', $transcription));
 
-    expect($transcription->refresh()->provider)->toBe('elevenlabs')
-        ->and($transcription->model)->toBe('scribe_v2');
+    expect($transcription->refresh()->provider)->toBe('openai')
+        ->and($transcription->model)->toBe('gpt-transcribe');
 });
 
 test('long file estimate exposes disabled model reasons', function () {
@@ -356,7 +353,7 @@ test('long file estimate exposes disabled model reasons', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->where('transcription.model_availability.elevenlabs.scribe_v2.available', true)
             ->where('transcription.model_availability.elevenlabs.scribe_v2.requires_transcode', false)
-            ->where('transcription.model_availability.openai.gpt-transcribe.available', false));
+            ->where('transcription.model_availability.openai.gpt-transcribe.available', true));
 });
 
 test('shows the estimate without exposing the private media path', function () {

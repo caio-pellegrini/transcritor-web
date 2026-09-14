@@ -57,7 +57,7 @@ return [
                     'label' => 'GPT-Transcribe',
                     'display_order' => 1,
                     'capabilities' => ['diarization' => false],
-                    'constraints' => ['max_duration_seconds' => 1500],
+                    'constraints' => ['max_duration_seconds' => null],
                     'pricing' => [
                         'type' => 'per_minute',
                         'usd' => 0.0045,

@@ -160,7 +160,7 @@ O limite de arquivo é exatamente 500 MiB no PHP e na validação Laravel. `post
 
 A estimativa usa o catálogo versionado em `config/transcription.php`. Ao escolher um arquivo, o navegador lê apenas seus metadados com uma object URL temporária, calcula a duração e mostra imediatamente custo e disponibilidade de modelos, sem upload. Trocar provider, modelo ou diarização recalcula essa prévia localmente. A cotação USD/BRL é carregada em paralelo pela aplicação, vem da AwesomeAPI (com a chave opcional `AWESOMEAPI_KEY`), fica em cache por 24 horas e usa `USD_BRL_FALLBACK_RATE` caso a consulta falhe.
 
-O botão **Iniciar transcrição** faz o upload sem a API key. O backend continua tratando a duração local como não confiável: valida extensão, MIME e conteúdo real com `ffprobe`, persiste sua própria duração e recalcula o custo. Se a opção continuar válida e o custo não aumentar mais que `max(5%, US$ 0,05)`, a interface envia a key no endpoint de início automaticamente. A interface sempre pede nova confirmação se mudar disponibilidade, necessidade de transcode, lado do limite de 25 minutos ou validade da diarização. Custo igual ou menor e oscilação apenas cambial não interrompem o fluxo. Acima de quatro horas, o servidor rejeita e remove o upload.
+O botão **Iniciar transcrição** faz o upload sem a API key. O backend continua tratando a duração local como não confiável: valida extensão, MIME e conteúdo real com `ffprobe`, persiste sua própria duração e recalcula o custo. Se a opção continuar válida e o custo não aumentar mais que `max(5%, US$ 0,05)`, a interface envia a key no endpoint de início automaticamente. A interface sempre pede nova confirmação se mudar disponibilidade, necessidade de transcode ou validade da diarização. Custo igual ou menor e oscilação apenas cambial não interrompem o fluxo. Acima de quatro horas, o servidor rejeita e remove o upload.
 
 Se o navegador não conseguir ler os metadados, o upload continua disponível. Nesse fallback, a tela mostra a estimativa calculada pelo servidor e pede confirmação antes de gastar. `awaiting_confirmation` permanece como estado interno entre upload e início; no caminho normal ele é transitório e não aparece como uma etapa separada.
 
@@ -169,7 +169,7 @@ O usuário escolhe diretamente o provider e o modelo. A disponibilidade de cada 
 Limites adotados nesta versão:
 
 - ElevenLabs `scribe_v2`: até os limites da aplicação, sem preprocessamento;
-- OpenAI `gpt-transcribe`: 25 MiB e limite conservador de 25 minutos;
+- OpenAI `gpt-transcribe`: 25 MiB, sem teto adicional de duração;
 - OpenAI `whisper-1`: 25 MiB, sem teto adicional de duração e sem diarização.
 
 Para os modelos OpenAI, arquivos acima de 25 MiB são convertidos uma única vez para WebM/Opus mono, com alvo de 23 MiB, bitrate máximo de 64 kbps e piso de qualidade de 16 kbps. Se não for possível caber sem romper o piso, a combinação fica indisponível. Não há chunking.
@@ -190,7 +190,7 @@ Na interface, envie um arquivo pequeno, informe uma chave válida do provider e 
 
 Para validar os limites sem consumir API, envie o arquivo e observe a estimativa antes de confirmar:
 
-- acima de 25 minutos, os modelos GPT da OpenAI aparecem indisponíveis e a tela explica que a diarização fica na ElevenLabs;
+- acima de 25 minutos, o `gpt-transcribe` continua disponível enquanto o arquivo puder ser enviado diretamente ou convertido para caber no limite da OpenAI;
 - um OpenAI acima de 25 MiB mostra o bitrate do transcode quando a conversão é viável;
 - para um arquivo longo, a ElevenLabs permanece disponível quando os modelos OpenAI atingem seus limites.
 
