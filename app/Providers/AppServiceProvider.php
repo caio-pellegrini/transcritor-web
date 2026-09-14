@@ -28,7 +28,13 @@ class AppServiceProvider extends ServiceProvider
         }
 
         RateLimiter::for('unlock', function (Request $request): Limit {
-            return Limit::perMinute(5)->by('unlock|'.$request->ip());
+            return Limit::perMinute(5)
+                ->by('unlock|'.$request->ip())
+                ->response(function (Request $request, array $headers) {
+                    return back()->withErrors([
+                        'password' => 'Muitas tentativas. Aguarde um minuto antes de tentar novamente.',
+                    ])->withHeaders($headers);
+                });
         });
     }
 }

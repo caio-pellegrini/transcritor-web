@@ -1,6 +1,6 @@
 <?php
 
-$acceptedExtensions = ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm'];
+$acceptedExtensions = ['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'wav', 'webm'];
 
 return [
     'accepted_extensions' => $acceptedExtensions,
@@ -12,11 +12,14 @@ return [
         'mpga' => ['mp3'],
         'm4a' => ['mov', 'mp4', 'm4a', '3gp', '3g2', 'mj2'],
         'wav' => ['wav'],
+        'ogg' => ['ogg'],
         'webm' => ['matroska', 'webm'],
     ],
 
     'exchange_rate' => [
         'endpoint' => 'https://economia.awesomeapi.com.br/json/last/USD-BRL',
+        'fallback_endpoint' => 'https://open.er-api.com/v6/latest/USD',
+        'api_key' => env('AWESOMEAPI_KEY'),
         'cache_seconds' => 24 * 60 * 60,
         'fallback' => (float) env('USD_BRL_FALLBACK_RATE', 5.0),
     ],
@@ -50,20 +53,9 @@ return [
                 'accepted_extensions' => $acceptedExtensions,
             ],
             'models' => [
-                'gpt-4o-mini-transcribe' => [
-                    'label' => 'GPT-4o Mini Transcribe — econômico, até 25 min',
-                    'display_order' => 1,
-                    'capabilities' => ['diarization' => false],
-                    'constraints' => ['max_duration_seconds' => 1500],
-                    'pricing' => [
-                        'type' => 'per_minute',
-                        'usd' => 0.003,
-                        'minimum_minutes' => 1.0,
-                    ],
-                ],
                 'gpt-transcribe' => [
-                    'label' => 'GPT Transcribe — limite conservador de 25 min',
-                    'display_order' => 2,
+                    'label' => 'GPT-Transcribe — novo modelo, até 25 min',
+                    'display_order' => 1,
                     'capabilities' => ['diarization' => false],
                     'constraints' => ['max_duration_seconds' => 1500],
                     'pricing' => [
@@ -72,31 +64,9 @@ return [
                         'minimum_minutes' => 1.0,
                     ],
                 ],
-                'gpt-4o-transcribe' => [
-                    'label' => 'GPT-4o Transcribe — até 25 min',
-                    'display_order' => 3,
-                    'capabilities' => ['diarization' => false],
-                    'constraints' => ['max_duration_seconds' => 1500],
-                    'pricing' => [
-                        'type' => 'per_minute',
-                        'usd' => 0.006,
-                        'minimum_minutes' => 1.0,
-                    ],
-                ],
-                'gpt-4o-transcribe-diarize' => [
-                    'label' => 'GPT-4o Transcribe Diarize — falantes, até 25 min',
-                    'display_order' => 4,
-                    'capabilities' => ['diarization' => true],
-                    'constraints' => ['max_duration_seconds' => 1500],
-                    'pricing' => [
-                        'type' => 'per_minute',
-                        'usd' => 0.006,
-                        'minimum_minutes' => 1.0,
-                    ],
-                ],
                 'whisper-1' => [
                     'label' => 'Whisper 1 — legado, sem diarização',
-                    'display_order' => 5,
+                    'display_order' => 2,
                     'capabilities' => ['diarization' => false],
                     'constraints' => ['max_duration_seconds' => null],
                     'pricing' => [

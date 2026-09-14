@@ -31,7 +31,7 @@ class TranscriptionModelAvailability
     {
         $mini = $this->forValues(
             provider: 'openai',
-            model: 'gpt-4o-mini-transcribe',
+            model: 'gpt-transcribe',
             durationSeconds: $transcription->duration_seconds,
             sizeBytes: $transcription->size_bytes,
         );

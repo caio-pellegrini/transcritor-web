@@ -5,6 +5,7 @@ namespace App\Services;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
@@ -29,30 +30,46 @@ class UsdBrlExchangeRateService
      */
     private function fetchOrFallback(): array
     {
-        try {
-            $response = Http::acceptJson()
-                ->connectTimeout(3)
-                ->timeout(5)
-                ->get(config('transcription.exchange_rate.endpoint'))
-                ->throw();
+        $endpoints = [
+            ['url' => config('transcription.exchange_rate.endpoint'), 'source' => 'awesomeapi'],
+            ['url' => config('transcription.exchange_rate.fallback_endpoint'), 'source' => 'open-er-api'],
+        ];
 
-            $bid = $response->json('USDBRL.bid');
-            $timestamp = $response->json('USDBRL.timestamp');
+        foreach ($endpoints as $endpoint) {
+            try {
+                $request = Http::acceptJson()->retry(2, 200)->connectTimeout(3)->timeout(5);
 
-            if (! is_numeric($bid) || (float) $bid <= 0 || ! is_numeric($timestamp)) {
-                throw new RuntimeException('Invalid exchange-rate response.');
+                if ($endpoint['source'] === 'awesomeapi' && filled(config('transcription.exchange_rate.api_key'))) {
+                    $request = $request->withHeader(
+                        'x-api-key',
+                        (string) config('transcription.exchange_rate.api_key'),
+                    );
+                }
+
+                $response = $request
+                    ->get($endpoint['url'])->throw();
+                $bid = $endpoint['source'] === 'awesomeapi'
+                    ? $response->json('USDBRL.bid') : $response->json('rates.BRL');
+                $timestamp = $endpoint['source'] === 'awesomeapi'
+                    ? $response->json('USDBRL.timestamp') : $response->json('time_last_update_unix');
+
+                if (! is_numeric($bid) || (float) $bid <= 0) {
+                    throw new RuntimeException('Invalid exchange-rate response.');
+                }
+
+                return [
+                    'rate' => (float) $bid,
+                    'quoted_at' => is_numeric($timestamp)
+                        ? CarbonImmutable::createFromTimestampUTC((int) $timestamp)->setTimezone(config('app.timezone'))->toIso8601String()
+                        : now()->toIso8601String(),
+                    'source' => $endpoint['source'],
+                ];
+            } catch (Throwable $exception) {
+                Log::warning('Exchange rate provider failed.', ['endpoint' => $endpoint['url'], 'message' => $exception->getMessage()]);
             }
-
-            return [
-                'rate' => (float) $bid,
-                'quoted_at' => CarbonImmutable::createFromTimestampUTC((int) $timestamp)
-                    ->setTimezone(config('app.timezone'))
-                    ->toIso8601String(),
-                'source' => 'awesomeapi',
-            ];
-        } catch (Throwable) {
-            return $this->fallback();
         }
+
+        return $this->fallback();
     }
 
     /**

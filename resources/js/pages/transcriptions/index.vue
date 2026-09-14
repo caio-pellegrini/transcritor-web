@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useGoogleDocsExport } from '@/composables/useGoogleDocsExport';
 import {
     calculateAvailability,
@@ -63,7 +63,7 @@ interface TranscriptionEstimate {
     cost_brl: number;
     exchange_rate: number;
     exchange_rate_quoted_at: string;
-    exchange_rate_source: 'awesomeapi' | 'fallback';
+    exchange_rate_source: 'awesomeapi' | 'open-er-api' | 'fallback';
     approximate_processing_seconds: number;
     pricing_notice: string;
 }
@@ -96,7 +96,7 @@ const props = defineProps<{
     exchange_rate?: {
         rate: number;
         quoted_at: string;
-        source: 'awesomeapi' | 'fallback';
+        source: 'awesomeapi' | 'open-er-api' | 'fallback';
     };
     exchange_rate_fallback: {
         rate: number;
@@ -161,6 +161,7 @@ const startProcessing = ref(false);
 const startErrors = ref<Record<string, string>>({});
 const clipboardMessage = ref<string | null>(null);
 const clipboardError = ref<string | null>(null);
+const isDragging = ref(false);
 const {
     createDocument: createGoogleDocument,
     documentUrl: googleDocumentUrl,
@@ -199,8 +200,7 @@ const updateApiKey = (event: Event) => {
     localStorage.setItem(apiKeyStorageKey(selectedProviderId.value), value);
 };
 
-const selectFile = async (event: Event) => {
-    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+const processSelectedFile = async (file: File | null) => {
     const sequence = ++selectedFileSequence;
     uploadForm.media = file;
     uploadForm.clearErrors('media');
@@ -241,6 +241,25 @@ const selectFile = async (event: Event) => {
     }
 };
 
+const selectFile = async (event: Event) => {
+    await processSelectedFile((event.target as HTMLInputElement).files?.[0] ?? null);
+};
+
+const handleDrop = async (event: DragEvent) => {
+    event.preventDefault();
+    isDragging.value = false;
+    await processSelectedFile(event.dataTransfer?.files?.[0] ?? null);
+};
+
+const handlePaste = async (event: ClipboardEvent) => {
+    const file = Array.from(event.clipboardData?.files ?? [])[0];
+
+    if (file) {
+        event.preventDefault();
+        await processSelectedFile(file);
+    }
+};
+
 const submitUpload = () => {
     startErrors.value = {};
     confirmationMessage.value = null;
@@ -260,6 +279,12 @@ const submitUpload = () => {
             'model',
             selectedAvailability.value.reason ?? 'Esta opção não serve para o arquivo.',
         );
+        return;
+    }
+
+    if (props.transcription && !window.confirm(
+        'Já existe uma transcrição nesta tela. Ao enviar outro arquivo, ela será substituída. Deseja continuar?',
+    )) {
         return;
     }
 
@@ -523,8 +548,8 @@ const localPreviewComparison = computed<PreviewComparison | null>(() => {
 const localRecommendedProviderId = computed(() => {
     if (localDuration.value === null || !uploadForm.media) return 'elevenlabs';
 
-    const mini = localAvailability('openai', 'gpt-4o-mini-transcribe');
-    return mini.available && !mini.requires_transcode ? 'openai' : 'elevenlabs';
+    const gptTranscribe = localAvailability('openai', 'gpt-transcribe');
+    return gptTranscribe.available && !gptTranscribe.requires_transcode ? 'openai' : 'elevenlabs';
 });
 
 const recommendedProvider = computed(() =>
@@ -535,12 +560,6 @@ const recommendedProvider = computed(() =>
 
 const recommendedProviderId = computed(
     () => props.transcription?.recommended_provider ?? localRecommendedProviderId.value,
-);
-
-const openAiDiarizationUnavailable = computed(
-    () =>
-        selectedProviderId.value === 'openai' &&
-        !availabilityFor('openai', 'gpt-4o-transcribe-diarize').available,
 );
 
 const estimateNeedsRefresh = computed(() => {
@@ -657,7 +676,10 @@ watch(
 onMounted(() => {
     loadApiKey();
     void initializeGoogle();
+    window.addEventListener('paste', handlePaste);
 });
+
+onUnmounted(() => window.removeEventListener('paste', handlePaste));
 </script>
 
 <template>
@@ -776,17 +798,22 @@ onMounted(() => {
 
                     <form class="space-y-4" @submit.prevent="submitUpload">
                         <label
-                            class="block cursor-pointer rounded-2xl border border-dashed border-white/15 bg-slate-900/60 p-6 transition hover:border-emerald-400/50"
+                            class="block cursor-pointer rounded-2xl border border-dashed bg-slate-900/60 p-6 transition hover:border-emerald-400/50"
+                            :class="isDragging ? 'border-emerald-400 bg-emerald-400/10' : 'border-white/15'"
+                            @dragenter.prevent="isDragging = true"
+                            @dragover.prevent="isDragging = true"
+                            @dragleave.prevent="isDragging = false"
+                            @drop="handleDrop"
                         >
-                            <span class="block font-medium">Escolher áudio ou vídeo</span>
+                            <span class="block font-medium">Arraste, cole ou escolha um áudio/vídeo</span>
                             <span class="mt-1 block text-sm text-slate-400">
-                                MP3, MP4, MPEG, MPGA, M4A, WAV ou WEBM — até
+                                MP3, MP4, MPEG, MPGA, M4A, OGG, WAV ou WEBM — até
                                 {{ formatBytes(limits.max_upload_bytes) }} e 4 horas
                             </span>
                             <input
                                 type="file"
                                 class="mt-4 block w-full text-sm text-slate-300 file:mr-4 file:rounded-lg file:border-0 file:bg-emerald-400 file:px-4 file:py-2 file:font-semibold file:text-slate-950"
-                                accept=".mp3,.mp4,.mpeg,.mpga,.m4a,.wav,.webm"
+                                accept=".mp3,.mp4,.mpeg,.mpga,.m4a,.ogg,.wav,.webm"
                                 @change="selectFile"
                             />
                             <span
@@ -854,13 +881,6 @@ onMounted(() => {
                                             ? 'Disponível para este modelo.'
                                             : 'Este modelo não oferece diarização.'
                                     }}
-                                </span>
-                                <span
-                                    v-if="openAiDiarizationUnavailable"
-                                    class="mt-2 block text-xs leading-5 text-amber-300"
-                                >
-                                    Acima de 25 minutos, a diarização fica disponível somente na
-                                    ElevenLabs.
                                 </span>
                             </span>
                         </label>

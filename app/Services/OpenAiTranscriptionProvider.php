@@ -75,19 +75,6 @@ class OpenAiTranscriptionProvider implements TranscriptionProvider
      */
     private function requestFields(Transcription $transcription): array
     {
-        if ($transcription->model === 'gpt-4o-transcribe-diarize') {
-            $fields = [
-                'model' => $transcription->model,
-                'response_format' => 'diarized_json',
-            ];
-
-            if ($transcription->duration_seconds > 30) {
-                $fields['chunking_strategy'] = 'auto';
-            }
-
-            return $fields;
-        }
-
         return [
             'model' => $transcription->model,
             'response_format' => $transcription->model === 'whisper-1'
