@@ -28,7 +28,7 @@ test('openai estimate applies the configured one minute minimum', function () {
     ]);
 
     $estimate = app(EstimateTranscription::class)->handle(
-        transcriptionForEstimate('openai', 'gpt-4o-mini-transcribe', 30),
+        transcriptionForEstimate('openai', 'gpt-transcribe', 30),
     );
 
     expect($estimate['cost_usd'])->toBe(0.003)
@@ -44,7 +44,7 @@ test('openai estimate scales by audio minutes after the minimum', function () {
     ]);
 
     $estimate = app(EstimateTranscription::class)->handle(
-        transcriptionForEstimate('openai', 'gpt-4o-transcribe', 150),
+        transcriptionForEstimate('openai', 'gpt-transcribe', 150),
     );
 
     expect($estimate['cost_usd'])->toBe(0.015);
@@ -84,7 +84,7 @@ test('exchange rate failure uses configured fallback without breaking estimate',
     ]);
 
     $estimate = app(EstimateTranscription::class)->handle(
-        transcriptionForEstimate('openai', 'gpt-4o-mini-transcribe', 60),
+        transcriptionForEstimate('openai', 'gpt-transcribe', 60),
     );
 
     expect($estimate['cost_usd'])->toBe(0.003)

@@ -32,7 +32,7 @@ test('api key is never stored or exposed in plaintext, including an invalid-key 
         'size_bytes' => 13,
         'duration_seconds' => 60,
         'provider' => 'openai',
-        'model' => 'gpt-4o-mini-transcribe',
+        'model' => 'gpt-transcribe',
         'diarization' => false,
         'expires_at' => now()->addDay(),
     ]);

@@ -31,7 +31,7 @@ function workflowTranscription(array $attributes = []): Transcription
         'size_bytes' => 13,
         'duration_seconds' => 60,
         'provider' => 'openai',
-        'model' => 'gpt-4o-mini-transcribe',
+        'model' => 'gpt-transcribe',
         'diarization' => false,
         'expires_at' => now()->addDay(),
     ], $attributes));
@@ -62,7 +62,7 @@ test('start rejects a model that is unavailable for the known media duration', f
     $transcription = workflowTranscription([
         'duration_seconds' => 1800,
         'provider' => 'openai',
-        'model' => 'gpt-4o-transcribe-diarize',
+        'model' => 'gpt-transcribe',
         'diarization' => true,
     ]);
 
@@ -73,7 +73,7 @@ test('start rejects a model that is unavailable for the known media duration', f
         ->post(route('transcriptions.start', $transcription))
         ->assertRedirect(route('transcriptions.show', $transcription))
         ->assertSessionHasErrors([
-            'transcription' => 'Acima de 25 minutos, use a diarização da ElevenLabs.',
+            'transcription' => 'Este modelo aceita áudios de no máximo 25 minutos.',
         ]);
 
     expect($transcription->refresh()->status)

@@ -42,7 +42,7 @@ test('openai sends a streamed multipart request and normalizes simple text', fun
     ]);
 
     $result = app(OpenAiTranscriptionProvider::class)->transcribe(
-        providerModel('openai', 'gpt-4o-mini-transcribe'),
+        providerModel('openai', 'gpt-transcribe'),
         Storage::disk('local')->path('provider/source.mp3'),
         'openai-test-key',
     );
@@ -55,7 +55,7 @@ test('openai sends a streamed multipart request and normalizes simple text', fun
         return $request->url() === config('transcription.providers.openai.endpoint')
             && $request->hasHeader('Authorization', 'Bearer openai-test-key')
             && $request->hasFile('file', filename: 'source.mp3')
-            && multipartValue($request, 'model') === 'gpt-4o-mini-transcribe'
+            && multipartValue($request, 'model') === 'gpt-transcribe'
             && multipartValue($request, 'response_format') === 'json';
     });
 });
@@ -83,33 +83,6 @@ test('openai normalizes whisper timestamps and detected language', function () {
         ]);
 
     Http::assertSent(fn (Request $request): bool => multipartValue($request, 'response_format') === 'verbose_json');
-});
-
-test('openai requests diarized json and normalizes speaker segments', function () {
-    Http::fake([
-        config('transcription.providers.openai.endpoint') => Http::response([
-            'text' => 'Bom dia. Olá.',
-            'segments' => [
-                ['speaker' => 'A', 'text' => 'Bom dia.', 'start' => 0, 'end' => 1.2],
-                ['speaker' => 'B', 'text' => 'Olá.', 'start' => 1.3, 'end' => 2],
-            ],
-        ]),
-    ]);
-    $transcription = providerModel('openai', 'gpt-4o-transcribe-diarize', true);
-    $transcription->duration_seconds = 60;
-
-    $result = app(OpenAiTranscriptionProvider::class)->transcribe(
-        $transcription,
-        Storage::disk('local')->path('provider/source.mp3'),
-        'openai-test-key',
-    );
-
-    expect($result->segments)->toHaveCount(2)
-        ->and($result->segments[0]['speaker'])->toBe('A')
-        ->and($result->segments[1]['start'])->toBe(1.3);
-
-    Http::assertSent(fn (Request $request): bool => multipartValue($request, 'response_format') === 'diarized_json'
-        && multipartValue($request, 'chunking_strategy') === 'auto');
 });
 
 test('elevenlabs sends original media, disables audio events, and groups words by speaker', function () {
@@ -181,9 +154,9 @@ test('provider errors are useful and never include the api key', function (
             ->and($exception->getMessage())->not->toContain($apiKey);
     }
 })->with([
-    'OpenAI invalid key' => ['openai', 'gpt-4o-mini-transcribe', 401, 'A API key da OpenAI é inválida ou não tem permissão.'],
+    'OpenAI invalid key' => ['openai', 'gpt-transcribe', 401, 'A API key da OpenAI é inválida ou não tem permissão.'],
     'ElevenLabs invalid key' => ['elevenlabs', 'scribe_v2', 401, 'A API key da ElevenLabs é inválida ou não tem permissão.'],
-    'OpenAI rate limit' => ['openai', 'gpt-4o-mini-transcribe', 429, 'A OpenAI limitou as requisições. Tente novamente mais tarde.'],
+    'OpenAI rate limit' => ['openai', 'gpt-transcribe', 429, 'A OpenAI limitou as requisições. Tente novamente mais tarde.'],
     'ElevenLabs server failure' => ['elevenlabs', 'scribe_v2', 503, 'A ElevenLabs está indisponível no momento.'],
 ]);
 
@@ -196,7 +169,7 @@ test('provider connection timeout is sanitized without an automatic retry', func
 
     try {
         app(OpenAiTranscriptionProvider::class)->transcribe(
-            providerModel('openai', 'gpt-4o-mini-transcribe'),
+            providerModel('openai', 'gpt-transcribe'),
             Storage::disk('local')->path('provider/source.mp3'),
             'timeout-sentinel-key',
         );

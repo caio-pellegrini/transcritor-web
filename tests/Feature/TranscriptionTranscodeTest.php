@@ -56,7 +56,7 @@ test('long oversized audio is transcoded below 25 MiB and every temporary file i
         'size_bytes' => filesize($absoluteMediaPath),
         'duration_seconds' => 1200,
         'provider' => 'openai',
-        'model' => 'gpt-4o-mini-transcribe',
+        'model' => 'gpt-transcribe',
         'diarization' => false,
     ]);
     $multipartBytes = null;

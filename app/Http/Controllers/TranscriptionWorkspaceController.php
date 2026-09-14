@@ -61,7 +61,6 @@ class TranscriptionWorkspaceController extends Controller
                     ? $estimateTranscription->handle($transcription)
                     : null,
                 'model_availability' => $modelAvailability->allFor($transcription),
-                'recommended_provider' => $modelAvailability->recommendedProviderFor($transcription),
             ],
         ]);
     }

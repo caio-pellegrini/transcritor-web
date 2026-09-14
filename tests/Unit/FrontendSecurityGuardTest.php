@@ -40,15 +40,14 @@ test('polling is recursive and stops when a transcription reaches a terminal sta
         ->not->toContain('setInterval');
 });
 
-test('estimate interface visibly disables unavailable models and identifies its recommendation', function () {
+test('estimate interface visibly disables unavailable models', function () {
     $page = file_get_contents(
         __DIR__.'/../../resources/js/pages/transcriptions/index.vue',
     );
 
     expect($page)
         ->toContain('!availabilityFor(selectedProviderId, modelId).available')
-        ->toContain('Recomendado para este arquivo:')
-        ->toContain('Acima de 25 minutos, a diarização fica disponível somente na')
+        ->not->toContain('Recomendado para este arquivo:')
         ->not->toContain('v-html');
 });
 

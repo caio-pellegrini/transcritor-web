@@ -41,7 +41,7 @@ test('accepts every supported media format after real ffprobe inspection', funct
         ->post('/transcriptions', [
             'media' => mediaFixture($extension),
             'provider' => 'openai',
-            'model' => 'gpt-4o-mini-transcribe',
+            'model' => 'gpt-transcribe',
             'diarization' => false,
         ]);
 
@@ -72,7 +72,7 @@ test('rejects a valid media file renamed to an incompatible extension', function
         ->post('/transcriptions', [
             'media' => mediaFixture('mp3', 'arquivo-falso.mp4'),
             'provider' => 'openai',
-            'model' => 'gpt-4o-mini-transcribe',
+            'model' => 'gpt-transcribe',
             'diarization' => false,
         ])
         ->assertRedirect('/')
@@ -91,7 +91,7 @@ test('rejects non-media content and leaves no stored file', function () {
         ->post('/transcriptions', [
             'media' => UploadedFile::fake()->createWithContent('falso.mp3', 'isto não é mídia'),
             'provider' => 'openai',
-            'model' => 'gpt-4o-mini-transcribe',
+            'model' => 'gpt-transcribe',
             'diarization' => false,
         ])
         ->assertRedirect('/')
@@ -116,7 +116,7 @@ test('rejects files above the centralized 500 MB limit', function () {
         ->post('/transcriptions', [
             'media' => $oversizedFile,
             'provider' => 'openai',
-            'model' => 'gpt-4o-mini-transcribe',
+            'model' => 'gpt-transcribe',
             'diarization' => false,
         ])
         ->assertRedirect('/')
@@ -135,7 +135,7 @@ test('rejects an upload clearly when the storage reserve is exhausted', function
         ->post('/transcriptions', [
             'media' => mediaFixture('mp3'),
             'provider' => 'openai',
-            'model' => 'gpt-4o-mini-transcribe',
+            'model' => 'gpt-transcribe',
             'diarization' => false,
         ])
         ->assertRedirect('/')
@@ -163,7 +163,7 @@ test('reports a clear message when php cannot write the temporary upload', funct
         ->post('/transcriptions', [
             'media' => $failedUpload,
             'provider' => 'openai',
-            'model' => 'gpt-4o-mini-transcribe',
+            'model' => 'gpt-transcribe',
             'diarization' => false,
         ])
         ->assertRedirect('/')
@@ -191,7 +191,7 @@ test('reports the 500 MB limit when php rejects an oversized upload', function (
         ->post('/transcriptions', [
             'media' => $failedUpload,
             'provider' => 'openai',
-            'model' => 'gpt-4o-mini-transcribe',
+            'model' => 'gpt-transcribe',
             'diarization' => false,
         ])
         ->assertRedirect('/')
@@ -224,7 +224,7 @@ test('rejects media above four hours based on ffprobe duration', function () {
         ->post('/transcriptions', [
             'media' => $media,
             'provider' => 'openai',
-            'model' => 'gpt-4o-mini-transcribe',
+            'model' => 'gpt-transcribe',
             'diarization' => false,
         ])
         ->assertRedirect('/')
@@ -271,7 +271,7 @@ test('recalculates provider and model without changing or uploading media', func
         'size_bytes' => 100,
         'duration_seconds' => 3600,
         'provider' => 'openai',
-        'model' => 'gpt-4o-mini-transcribe',
+        'model' => 'gpt-transcribe',
         'diarization' => false,
     ]);
 
@@ -316,19 +316,19 @@ test('rejects recalculation to a model that cannot handle the known duration', f
         ->from(route('transcriptions.show', $transcription))
         ->patch(route('transcriptions.estimate', $transcription), [
             'provider' => 'openai',
-            'model' => 'gpt-4o-transcribe-diarize',
-            'diarization' => true,
+            'model' => 'gpt-transcribe',
+            'diarization' => false,
         ])
         ->assertRedirect(route('transcriptions.show', $transcription))
         ->assertSessionHasErrors([
-            'model' => 'Acima de 25 minutos, use a diarização da ElevenLabs.',
+            'model' => 'Este modelo aceita áudios de no máximo 25 minutos.',
         ]);
 
     expect($transcription->refresh()->provider)->toBe('elevenlabs')
         ->and($transcription->model)->toBe('scribe_v2');
 });
 
-test('long file estimate exposes disabled model reasons and recommends elevenlabs', function () {
+test('long file estimate exposes disabled model reasons', function () {
     Http::fake([
         config('transcription.exchange_rate.endpoint') => Http::response([
             'USDBRL' => ['bid' => '5.0000', 'timestamp' => '1786377600'],
@@ -354,12 +354,9 @@ test('long file estimate exposes disabled model reasons and recommends elevenlab
         ->get(route('transcriptions.show', $transcription))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->where('transcription.recommended_provider', 'elevenlabs')
             ->where('transcription.model_availability.elevenlabs.scribe_v2.available', true)
             ->where('transcription.model_availability.elevenlabs.scribe_v2.requires_transcode', false)
-            ->where('transcription.model_availability.openai.gpt-4o-mini-transcribe.available', false)
-            ->where('transcription.model_availability.openai.gpt-transcribe.available', false)
-            ->where('transcription.model_availability.openai.gpt-4o-transcribe-diarize.reason', 'Acima de 25 minutos, use a diarização da ElevenLabs.'));
+            ->where('transcription.model_availability.openai.gpt-transcribe.available', false));
 });
 
 test('shows the estimate without exposing the private media path', function () {
@@ -381,7 +378,7 @@ test('shows the estimate without exposing the private media path', function () {
         'size_bytes' => 100,
         'duration_seconds' => 60,
         'provider' => 'openai',
-        'model' => 'gpt-4o-mini-transcribe',
+            'model' => 'gpt-transcribe',
         'diarization' => false,
     ]);
 
@@ -396,6 +393,6 @@ test('shows the estimate without exposing the private media path', function () {
             ->component('transcriptions/index')
             ->where('transcription.id', $transcription->id)
             ->where('transcription.original_filename', $unsafeFilename)
-            ->where('transcription.estimate.cost_usd', 0.003)
+            ->where('transcription.estimate.cost_usd', 0.0045)
             ->missing('transcription.media_path'));
 });

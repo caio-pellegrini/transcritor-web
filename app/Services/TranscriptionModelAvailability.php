@@ -27,22 +27,6 @@ class TranscriptionModelAvailability
         return $availability;
     }
 
-    public function recommendedProviderFor(Transcription $transcription): string
-    {
-        $mini = $this->forValues(
-            provider: 'openai',
-            model: 'gpt-transcribe',
-            durationSeconds: $transcription->duration_seconds,
-            sizeBytes: $transcription->size_bytes,
-        );
-
-        if ($mini['available'] && ! $mini['requires_transcode']) {
-            return 'openai';
-        }
-
-        return 'elevenlabs';
-    }
-
     /**
      * @return array{available: bool, reason: ?string, requires_transcode: bool, bitrate_kbps: ?int}
      */

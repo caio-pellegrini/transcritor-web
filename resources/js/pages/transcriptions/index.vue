@@ -84,7 +84,6 @@ interface Transcription {
     diarization: boolean;
     estimate: TranscriptionEstimate | null;
     model_availability: Record<string, Record<string, ModelAvailability>>;
-    recommended_provider: string;
 }
 
 const props = defineProps<{
@@ -545,23 +544,6 @@ const localPreviewComparison = computed<PreviewComparison | null>(() => {
     };
 });
 
-const localRecommendedProviderId = computed(() => {
-    if (localDuration.value === null || !uploadForm.media) return 'elevenlabs';
-
-    const gptTranscribe = localAvailability('openai', 'gpt-transcribe');
-    return gptTranscribe.available && !gptTranscribe.requires_transcode ? 'openai' : 'elevenlabs';
-});
-
-const recommendedProvider = computed(() =>
-    props.transcription
-        ? props.providers[props.transcription.recommended_provider]
-        : props.providers[localRecommendedProviderId.value],
-);
-
-const recommendedProviderId = computed(
-    () => props.transcription?.recommended_provider ?? localRecommendedProviderId.value,
-);
-
 const estimateNeedsRefresh = computed(() => {
     const transcription = props.transcription;
 
@@ -725,9 +707,7 @@ onUnmounted(() => window.removeEventListener('paste', handlePaste));
                                     {{ providers[providerId].label }}
                                     {{
                                         providerHasAvailableModels(providerId)
-                                            ? recommendedProviderId === providerId
-                                                ? '— recomendado'
-                                                : ''
+                                            ? ''
                                             : '— indisponível'
                                     }}
                                 </option>
@@ -766,20 +746,6 @@ onUnmounted(() => window.removeEventListener('paste', handlePaste));
                             </span>
                         </label>
                     </div>
-
-                    <p
-                        v-if="(transcription || localEstimate) && recommendedProvider"
-                        class="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm leading-6 text-emerald-100"
-                    >
-                        Recomendado para este arquivo:
-                        <strong>{{ recommendedProvider.label }}</strong>
-                        <template v-if="recommendedProviderId === 'elevenlabs'">
-                            — recebe a mídia original, preserva a qualidade e oferece diarização.
-                        </template>
-                        <template v-else>
-                            — o modelo Mini é a opção de menor custo e não exige conversão.
-                        </template>
-                    </p>
 
                     <label class="block">
                         <span class="mb-2 block text-sm font-medium text-slate-200">

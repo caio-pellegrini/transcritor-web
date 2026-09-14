@@ -164,7 +164,7 @@ O botão **Iniciar transcrição** faz o upload sem a API key. O backend continu
 
 Se o navegador não conseguir ler os metadados, o upload continua disponível. Nesse fallback, a tela mostra a estimativa calculada pelo servidor e pede confirmação antes de gastar. `awaiting_confirmation` permanece como estado interno entre upload e início; no caminho normal ele é transitório e não aparece como uma etapa separada.
 
-Para arquivos curtos que já cabem na OpenAI, o GPT-4o Mini é indicado pelo menor preço configurado. Quando a OpenAI exigiria conversão ou não suporta a duração, a ElevenLabs é destacada porque recebe a mídia original e oferece diarização.
+O usuário escolhe diretamente o provider e o modelo. A disponibilidade de cada opção é calculada conforme os limites de duração, tamanho e conversão.
 
 Limites adotados nesta versão:
 
@@ -192,7 +192,7 @@ Para validar os limites sem consumir API, envie o arquivo e observe a estimativa
 
 - acima de 25 minutos, os modelos GPT da OpenAI aparecem indisponíveis e a tela explica que a diarização fica na ElevenLabs;
 - um OpenAI acima de 25 MiB mostra o bitrate do transcode quando a conversão é viável;
-- para um arquivo longo, a ElevenLabs aparece como recomendada.
+- para um arquivo longo, a ElevenLabs permanece disponível quando os modelos OpenAI atingem seus limites.
 
 Os testes de provider usam `Http::fake()` e não consomem créditos. O teste de transcode gera um WAV longo em disco com ffmpeg, comprova que o multipart final fica abaixo de 25 MiB e verifica a remoção de todo o diretório temporário.
 
