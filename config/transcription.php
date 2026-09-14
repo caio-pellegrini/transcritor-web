@@ -54,7 +54,7 @@ return [
             ],
             'models' => [
                 'gpt-transcribe' => [
-                    'label' => 'GPT-Transcribe — novo modelo, até 25 min',
+                    'label' => 'GPT-Transcribe',
                     'display_order' => 1,
                     'capabilities' => ['diarization' => false],
                     'constraints' => ['max_duration_seconds' => 1500],
@@ -65,7 +65,7 @@ return [
                     ],
                 ],
                 'whisper-1' => [
-                    'label' => 'Whisper 1 — legado, sem diarização',
+                    'label' => 'Whisper 1',
                     'display_order' => 2,
                     'capabilities' => ['diarization' => false],
                     'constraints' => ['max_duration_seconds' => null],
@@ -90,7 +90,7 @@ return [
             ],
             'models' => [
                 'scribe_v2' => [
-                    'label' => 'Scribe v2 — áudio original e diarização',
+                    'label' => 'Scribe v2',
                     'display_order' => 1,
                     'capabilities' => ['diarization' => true],
                     'pricing' => [

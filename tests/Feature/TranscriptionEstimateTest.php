@@ -31,8 +31,8 @@ test('openai estimate applies the configured one minute minimum', function () {
         transcriptionForEstimate('openai', 'gpt-transcribe', 30),
     );
 
-    expect($estimate['cost_usd'])->toBe(0.003)
-        ->and($estimate['cost_brl'])->toBe(0.0153)
+    expect($estimate['cost_usd'])->toBe(0.0045)
+        ->and($estimate['cost_brl'])->toBe(0.02295)
         ->and($estimate['exchange_rate'])->toBe(5.1);
 });
 
@@ -47,7 +47,7 @@ test('openai estimate scales by audio minutes after the minimum', function () {
         transcriptionForEstimate('openai', 'gpt-transcribe', 150),
     );
 
-    expect($estimate['cost_usd'])->toBe(0.015);
+    expect($estimate['cost_usd'])->toBe(0.01125);
 });
 
 test('elevenlabs estimate uses hourly pricing without a minimum', function () {
@@ -81,14 +81,15 @@ test('exchange rate is cached for 24 hours', function () {
 test('exchange rate failure uses configured fallback without breaking estimate', function () {
     Http::fake([
         config('transcription.exchange_rate.endpoint') => Http::response([], 500),
+        config('transcription.exchange_rate.fallback_endpoint') => Http::response([], 500),
     ]);
 
     $estimate = app(EstimateTranscription::class)->handle(
         transcriptionForEstimate('openai', 'gpt-transcribe', 60),
     );
 
-    expect($estimate['cost_usd'])->toBe(0.003)
-        ->and($estimate['cost_brl'])->toBe(0.01575)
+    expect($estimate['cost_usd'])->toBe(0.0045)
+        ->and($estimate['cost_brl'])->toBe(0.023625)
         ->and($estimate['exchange_rate'])->toBe(5.25)
         ->and($estimate['exchange_rate_source'])->toBe('fallback')
         ->and($estimate['exchange_rate_quoted_at'])->toBeString();
