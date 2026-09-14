@@ -110,7 +110,7 @@ Não atualize enquanto a tela mostrar uma transcrição na fila ou em processame
    curl --fail https://transcritor.seudominio.com/up
    ```
 
-O `app` executa migrations automaticamente. Em cada inicialização, os assets da imagem são copiados novamente para `app_public`, evitando servir um frontend antigo depois do deploy.
+O `app` executa migrations automaticamente e limpa o cache da aplicação antes de recriar o `config:cache`. Em cada inicialização, os assets da imagem são copiados novamente para `app_public`, evitando servir um frontend antigo depois do deploy.
 
 ### Backup do SQLite
 

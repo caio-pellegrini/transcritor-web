@@ -18,6 +18,7 @@ touch /var/www/html/storage/app/database.sqlite
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 if [ "${APP_ENV:-production}" = "production" ]; then
+    php artisan cache:clear
     php artisan config:cache
 else
     php artisan optimize:clear
