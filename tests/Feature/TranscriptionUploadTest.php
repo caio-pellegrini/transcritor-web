@@ -375,7 +375,7 @@ test('shows the estimate without exposing the private media path', function () {
         'size_bytes' => 100,
         'duration_seconds' => 60,
         'provider' => 'openai',
-            'model' => 'gpt-transcribe',
+        'model' => 'gpt-transcribe',
         'diarization' => false,
     ]);
 

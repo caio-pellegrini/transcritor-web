@@ -129,7 +129,6 @@ const localDurationState = ref<'idle' | 'loading' | 'ready' | 'unavailable'>('id
 const localDurationError = ref<string | null>(null);
 const previewAtUpload = ref<PreviewComparison | null>(null);
 const confirmationMessage = ref<string | null>(null);
-const automaticStartPending = ref(false);
 let selectedFileSequence = 0;
 const liveStatus = ref<TranscriptionStatus>(props.transcription?.status ?? 'awaiting_confirmation');
 const liveProgress = ref<TranscriptionProgress>(
@@ -263,11 +262,6 @@ const submitUpload = () => {
     startErrors.value = {};
     confirmationMessage.value = null;
 
-    if (apiKey.value.trim() === '') {
-        startErrors.value.api_key = 'Informe a API key do provider antes de iniciar.';
-        return;
-    }
-
     if (localDuration.value && localDuration.value > props.limits.max_duration_seconds) {
         uploadForm.setError('media', 'O arquivo excede o limite de duração de 4 horas.');
         return;
@@ -291,25 +285,26 @@ const submitUpload = () => {
     uploadForm.model = selectedModelId.value;
     uploadForm.diarization = diarization.value;
 
-    const keyForStart = apiKey.value;
     const preview = localPreviewComparison.value;
     previewAtUpload.value = preview;
-    automaticStartPending.value = preview !== null;
 
     uploadForm.post('/transcriptions', {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: (page) => {
             uploadForm.reset('media');
+            localDuration.value = null;
+            localDurationState.value = 'idle';
+            localDurationError.value = null;
             const transcription = page.props.transcription as Transcription | null;
 
             if (!transcription?.estimate) {
-                automaticStartPending.value = false;
+                confirmationMessage.value =
+                    'O arquivo foi recebido, mas a estimativa não ficou disponível. Tente recalcular.';
                 return;
             }
 
             if (!preview) {
-                automaticStartPending.value = false;
                 confirmationMessage.value =
                     'A duração foi calculada pelo servidor. Confira o valor antes de iniciar.';
                 return;
@@ -329,15 +324,14 @@ const submitUpload = () => {
             });
 
             if (reason) {
-                automaticStartPending.value = false;
                 confirmationMessage.value = reason;
                 return;
             }
 
-            startTranscription(transcription.id, keyForStart);
+            confirmationMessage.value = null;
         },
         onError: () => {
-            automaticStartPending.value = false;
+            previewAtUpload.value = null;
         },
     });
 };
@@ -385,7 +379,6 @@ const startTranscription = (transcriptionId = props.transcription?.id, key = api
             },
             onFinish: () => {
                 startProcessing.value = false;
-                automaticStartPending.value = false;
             },
         },
     );
@@ -557,10 +550,14 @@ const estimateNeedsRefresh = computed(() => {
 });
 
 const actionLabel = computed(() => {
+    if (uploadForm.processing && (uploadForm.progress?.percentage ?? 0) >= 100) {
+        return 'Validando no servidor…';
+    }
     if (uploadForm.processing) return 'Enviando e validando…';
+    if ((uploadForm.progress?.percentage ?? 0) >= 100) return 'Validando no servidor…';
     if (localDurationState.value === 'loading') return 'Lendo duração…';
     if (localDurationState.value === 'unavailable') return 'Enviar e calcular no servidor';
-    return 'Iniciar transcrição';
+    return 'Enviar arquivo e validar';
 });
 
 const localFileTooLarge = computed(
@@ -760,6 +757,10 @@ onUnmounted(() => window.removeEventListener('paste', handlePaste));
                             placeholder="Cole sua chave aqui"
                             @input="updateApiKey"
                         />
+                        <span class="mt-2 block text-xs leading-5 text-slate-400">
+                            A chave só será enviada ao provider quando você confirmar o início da
+                            transcrição.
+                        </span>
                     </label>
 
                     <form class="space-y-4" @submit.prevent="submitUpload">
@@ -858,7 +859,12 @@ onUnmounted(() => window.removeEventListener('paste', handlePaste));
                                 max="100"
                             />
                             <p class="text-xs text-slate-400">
-                                Enviando: {{ uploadForm.progress.percentage ?? 0 }}%
+                                <template v-if="(uploadForm.progress.percentage ?? 0) >= 100">
+                                    Upload concluído. Aguardando validação do servidor…
+                                </template>
+                                <template v-else>
+                                    Enviando: {{ uploadForm.progress.percentage ?? 0 }}%
+                                </template>
                             </p>
                         </div>
 
@@ -1014,16 +1020,7 @@ onUnmounted(() => window.removeEventListener('paste', handlePaste));
                                 continuar.
                             </p>
 
-                            <p
-                                v-if="automaticStartPending"
-                                class="rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-100"
-                            >
-                                Arquivo validado e estimativa confirmada. Enfileirando a
-                                transcrição…
-                            </p>
-
                             <button
-                                v-if="!automaticStartPending"
                                 type="button"
                                 :disabled="
                                     estimateForm.processing ||
@@ -1043,7 +1040,7 @@ onUnmounted(() => window.removeEventListener('paste', handlePaste));
                             </button>
 
                             <p
-                                v-if="!automaticStartPending && startErrors.api_key"
+                                v-if="startErrors.api_key"
                                 class="text-sm text-rose-400"
                             >
                                 {{ startErrors.api_key }}
@@ -1056,7 +1053,6 @@ onUnmounted(() => window.removeEventListener('paste', handlePaste));
                             </p>
 
                             <button
-                                v-if="!automaticStartPending"
                                 type="button"
                                 :disabled="
                                     startProcessing ||

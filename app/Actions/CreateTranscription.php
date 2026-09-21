@@ -6,6 +6,7 @@ use App\Models\Transcription;
 use App\Services\MediaProbeService;
 use App\Services\TranscriptionDiskSpaceGuard;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -60,7 +61,15 @@ class CreateTranscription
                     (int) config('transcription.cleanup.awaiting_confirmation_hours'),
                 ),
             ]);
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            Log::error('Transcription upload could not be stored.', [
+                'provider' => $provider,
+                'model' => $model,
+                'file_extension' => $extension,
+                'file_size_bytes' => $sizeBytes,
+                'exception' => $exception,
+            ]);
+
             Storage::disk('local')->deleteDirectory($directory);
 
             throw ValidationException::withMessages([

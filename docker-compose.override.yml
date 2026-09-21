@@ -6,7 +6,9 @@ services:
       APP_ENV: local
       APP_DEBUG: "true"
     ports:
-      - "5173:5173"
+      # Keep the local Vite port configurable so it does not collide with
+      # another project already running on the host.
+      - "127.0.0.1:${VITE_PORT:-5174}:5173"
     volumes:
       - .:/var/www/html
       - ./public:/var/www/html/public

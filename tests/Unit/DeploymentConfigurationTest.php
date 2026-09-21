@@ -29,6 +29,7 @@ test('request provider and queue timeouts have ordered headroom', function () {
         ->toContain('client_body_timeout 7200s;')
         ->toContain('fastcgi_send_timeout 7200s;')
         ->toContain('fastcgi_read_timeout 7200s;')
+        ->toContain('fastcgi_request_buffering on;')
         ->and($php)->toContain('max_input_time=7200')
         ->and($fpm)->toContain('request_terminate_timeout = 7200s')
         ->and($providerTimeout)->toBe(21600)

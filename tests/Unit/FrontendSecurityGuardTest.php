@@ -70,11 +70,13 @@ test('local preview reads only browser metadata and keeps upload separate from a
     expect($page)
         ->toContain("uploadForm.post('/transcriptions'")
         ->toContain("'X-Transcription-Api-Key': key")
-        ->toContain('startTranscription(transcription.id, keyForStart)')
+        ->toContain('Enviar arquivo e validar')
+        ->toContain('A chave só será enviada ao provider')
         ->toContain('Prévia local — nenhum upload feito')
         ->toContain('Confirmar valor corrigido e iniciar')
         ->toContain("new Intl.NumberFormat('pt-BR'")
         ->toContain('maximumFractionDigits: 2')
+        ->not->toContain('startTranscription(transcription.id, keyForStart)')
         ->not->toContain('v-html');
 });
 

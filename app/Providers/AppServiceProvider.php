@@ -31,9 +31,13 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)
                 ->by('unlock|'.$request->ip())
                 ->response(function (Request $request, array $headers) {
-                    return back()->withErrors([
+                    $response = back()->withErrors([
                         'password' => 'Muitas tentativas. Aguarde um minuto antes de tentar novamente.',
                     ])->withHeaders($headers);
+
+                    return $request->header('X-Inertia')
+                        ? $response
+                        : $response->setStatusCode(429);
                 });
         });
     }
