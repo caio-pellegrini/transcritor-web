@@ -1,6 +1,22 @@
 # Transcritor Web
 
-Aplicação pessoal de transcrição de áudio e vídeo. O fluxo cobre ambiente, proteção de acesso, upload, estimativa, processamento assíncrono, OpenAI, ElevenLabs, polling, limpeza temporária e exportação.
+**A production-oriented web application for long-form audio and video transcription with provider selection, cost estimation, asynchronous processing, and export workflows.**
+
+I built Transcritor Web as a practical tool rather than a thin API demo. It validates large media uploads, estimates transcription cost before spending, queues long-running work, integrates OpenAI and ElevenLabs, cleans temporary media, and exports completed transcripts to clipboard, DOCX, or Google Docs.
+
+### Engineering highlights
+
+- Laravel application with asynchronous queue workers and scheduled cleanup.
+- OpenAI and ElevenLabs transcription providers with explicit model/limit handling.
+- Client and server-side cost estimation before a paid transcription starts.
+- FFmpeg/ffprobe validation and conditional transcoding for provider upload limits.
+- API keys kept out of persistent application models and encrypted while queued.
+- Dockerized production setup with Nginx, HTTPS assumptions, health checks, backup/restore procedures, and bounded concurrency.
+- Google Docs export using a browser-side OAuth token that never passes through the application backend.
+
+The README is intentionally operationally detailed because the difficult part of the project is not only calling a transcription API: it is safely handling large files, long-running paid requests, provider constraints, credentials, failures, cleanup, and deployment.
+
+> Detailed deployment and operational documentation below is in Portuguese.
 
 ## Ambiente local
 
